@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<meta name="theme-color" content="#1D9E75" />
+<meta name="description" content="Dashboard personal de seguimiento de cartera con plan a 20 años, benchmarks IPSA/S&P 500 y simulador de rotación" />
+<title>Portfolio Tracker · Plan 20 años</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css" />
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f4ef;
+  --bg-tertiary: #faf9f5;
+  --bg-info: #e6f1fb;
+  --bg-success: #eaf3de;
+  --bg-warning: #faeeda;
+  --bg-danger: #fcebeb;
+  --text-primary: #1a1a1a;
+  --text-secondary: #5f5e5a;
+  --text-tertiary: #888780;
+  --text-info: #185fa5;
+  --text-success: #3b6d11;
+  --text-warning: #854f0b;
+  --text-danger: #a32d2d;
+  --border-tertiary: rgba(0,0,0,0.08);
+  --border-secondary: rgba(0,0,0,0.15);
+  --accent: #1D9E75;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #262624;
+    --bg-tertiary: #1f1f1d;
+    --bg-info: #0c447c;
+    --bg-success: #27500a;
+    --bg-warning: #633806;
+    --bg-danger: #791f1f;
+    --text-primary: #f5f4ef;
+    --text-secondary: #b4b2a9;
+    --text-tertiary: #888780;
+    --text-info: #b5d4f4;
+    --text-success: #c0dd97;
+    --text-warning: #fac775;
+    --text-danger: #f7c1c1;
+    --border-tertiary: rgba(255,255,255,0.1);
+    --border-secondary: rgba(255,255,255,0.18);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: 80px;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding: 0 4px;
+}
+.app-header h1 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+.app-header .subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 2px 0 0;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-tertiary);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+  font-weight: 500;
+}
+.tab-content { display: none; animation: fadeIn 0.2s; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-tertiary);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.metric-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+.metric-label { font-size: 13px; color: var(--text-secondary); margin: 0 0 6px; }
+.metric-value { font-size: 22px; font-weight: 500; margin: 0; }
+.metric-sub { font-size: 12px; color: var(--text-tertiary); margin: 4px 0 0; }
+.grid { display: grid; gap: 12px; }
+.grid-auto { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-primary);
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg-secondary); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-danger { color: var(--text-danger); }
+.btn-icon { padding: 4px 6px; }
+input, select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-tertiary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+input[type="range"] { padding: 0; height: 30px; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+.mkt-selector {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  width: fit-content;
+}
+.mkt-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: inherit;
+}
+.mkt-btn.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.alert {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.alert-info { background: var(--bg-info); border-color: var(--text-info); color: var(--text-info); }
+.alert-success { background: var(--bg-success); border-color: var(--text-success); color: var(--text-success); }
+.alert-warning { background: var(--bg-warning); border-color: var(--text-warning); color: var(--text-warning); }
+.alert-danger { background: var(--bg-danger); border-color: var(--text-danger); color: var(--text-danger); }
+.alert i { font-size: 18px; margin-top: 2px; flex-shrink: 0; }
+.alert-title { font-weight: 500; font-size: 13px; margin-bottom: 4px; }
+.alert-msg { font-size: 12px; opacity: 0.9; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-tertiary);
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+}
+.row-main { flex: 1; min-width: 0; }
+.row-title { font-weight: 500; font-size: 14px; }
+.row-sub { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-aside { text-align: right; }
+.text-success { color: var(--text-success); }
+.text-danger { color: var(--text-danger); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.bar-container {
+  background: var(--bg-secondary);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+.bar-fill {
+  background: var(--accent);
+  height: 100%;
+  transition: width 0.6s ease;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 4px; font-weight: 500; color: var(--text-secondary); border-bottom: 1px solid var(--border-tertiary); }
+td { padding: 8px 4px; border-bottom: 1px solid var(--border-tertiary); }
+.install-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg-info);
+  border-left: 3px solid var(--text-info);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+.install-banner.show { display: flex; }
+.install-banner p { margin: 0; font-size: 13px; color: var(--text-info); flex: 1; }
+@media (max-width: 600px) {
+  .app { padding: 12px; padding-bottom: 80px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .app-header h1 { font-size: 18px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div>
+      <h1><i class="ti ti-chart-pie-filled" style="color: var(--accent); vertical-align: -3px;"></i> Portfolio Tracker</h1>
+      <p class="subtitle">Plan a 20 años · IPSA + S&P 500</p>
+    </div>
+    <button class="btn btn-sm" id="theme-info-btn" title="Datos guardados localmente en tu navegador">
+      <i class="ti ti-database"></i> Local
+    </button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="dashboard"><i class="ti ti-chart-line"></i> Dashboard</button>
+    <button class="tab-btn" data-tab="portfolio"><i class="ti ti-briefcase"></i> Cartera</button>
+    <button class="tab-btn" data-tab="dividends"><i class="ti ti-coin"></i> Dividendos</button>
+    <button class="tab-btn" data-tab="rotation"><i class="ti ti-arrows-exchange"></i> Rotación</button>
+    <button class="tab-btn" data-tab="benchmark"><i class="ti ti-scale"></i> Benchmark</button>
+    <button class="tab-btn" data-tab="projection"><i class="ti ti-trending-up"></i> Proyección</button>
+    <button class="tab-btn" data-tab="alerts"><i class="ti ti-bell"></i> Alertas</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="tab-content active">
+    <div class="mkt-selector">
+      <button class="mkt-btn active" data-mkt="ALL">Total</button>
+      <button class="mkt-btn" data-mkt="CL">🇨🇱 Chile</button>
+      <button class="mkt-btn" data-mkt="US">🇺🇸 EE.UU.</button>
+    </div>
+    <div id="metrics-grid" class="grid grid-auto" style="margin-bottom: 1.5rem;"></div>
+    <div id="market-split" class="grid grid-2">
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+          <span style="font-size: 18px;">🇨🇱</span>
+          <strong style="font-size: 14px;">Cartera Chile</strong>
+        </div>
+        <div id="cl-summary"></div>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+          <span style="font-size: 18px;">🇺🇸</span>
+          <strong style="font-size: 14px;">Cartera EE.UU.</strong>
+        </div>
+        <div id="us-summary"></div>
+      </div>
+    </div>
+    <div class="card">
+      <p class="metric-label">Progreso hacia US$100,000</p>
+      <div class="bar-container" style="margin-bottom: 8px; height: 12px;"><div id="progress-bar" class="bar-fill" style="width: 0%;"></div></div>
+      <div style="display: flex; justify-content: space-between; font-size: 12px;" class="text-tertiary">
+        <span id="progress-current">$0</span><span id="progress-eta">Estimando...</span>
+      </div>
+    </div>
+    <div class="card">
+      <p class="metric-label">Distribución sectorial <span id="dist-scope" class="text-tertiary">(total)</span></p>
+      <div id="dist-bars"></div>
+    </div>
+  </section>
+
+  <!-- PORTFOLIO -->
+  <section id="tab-portfolio" class="tab-content">
+    <div style="display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap;">
+      <button class="btn" id="add-position-btn"><i class="ti ti-plus"></i> Agregar</button>
+      <button class="btn" id="export-csv-btn"><i class="ti ti-download"></i> CSV</button>
+      <button class="btn" id="export-json-btn"><i class="ti ti-file-export"></i> Backup JSON</button>
+      <button class="btn" id="import-json-btn"><i class="ti ti-upload"></i> Restaurar</button>
+      <input type="file" id="import-file" accept=".json" style="display: none;" />
+      <button class="btn btn-danger" id="reset-btn"><i class="ti ti-refresh"></i> Reset</button>
+    </div>
+    <div id="add-form" class="card" style="display: none; background: var(--bg-secondary);">
+      <div class="grid grid-2" style="margin-bottom: 8px;">
+        <input id="f-ticker" placeholder="Ticker (ej: VOO)" />
+        <select id="f-market"><option value="CL">🇨🇱 Chile (CLP)</option><option value="US">🇺🇸 EE.UU. (USD)</option></select>
+      </div>
+      <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 8px;">
+        <input id="f-qty" type="number" step="0.0001" placeholder="Cantidad" />
+        <input id="f-buy" type="number" step="0.01" placeholder="P. compra" />
+        <input id="f-now" type="number" step="0.01" placeholder="P. actual" />
+      </div>
+      <div class="grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 8px;">
+        <input id="f-name" placeholder="Nombre (opcional)" />
+        <input id="f-yield" type="number" step="0.1" placeholder="Yield % (opt)" />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" id="save-position-btn">Guardar</button>
+        <button class="btn" id="cancel-position-btn">Cancelar</button>
+      </div>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+        <span style="font-size: 16px;">🇨🇱</span>
+        <strong style="font-size: 14px;">Posiciones Chile</strong>
+        <span id="cl-count" class="text-tertiary" style="font-size: 12px; margin-left: auto;"></span>
+      </div>
+      <div id="cl-positions"></div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; margin-top: 1rem;">
+        <span style="font-size: 16px;">🇺🇸</span>
+        <strong style="font-size: 14px;">Posiciones EE.UU.</strong>
+        <span id="us-count" class="text-tertiary" style="font-size: 12px; margin-left: auto;"></span>
+      </div>
+      <div id="us-positions"></div>
+    </div>
+  </section>
+
+  <!-- DIVIDENDS -->
+  <section id="tab-dividends" class="tab-content">
+    <div class="alert alert-success">
+      <i class="ti ti-coin"></i>
+      <div><div class="alert-title">Ingreso pasivo estimado</div><div class="alert-msg">Yields aproximados basados en datos públicos. Revisa siempre el último anuncio de cada empresa.</div></div>
+    </div>
+    <div id="div-metrics" class="grid grid-auto" style="margin-bottom: 1.5rem;"></div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 12px;">Top pagadores de tu cartera</strong>
+      <div id="div-top"></div>
+    </div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 8px;">Proyección de dividendos anuales con DCA</strong>
+      <p class="text-secondary" style="font-size: 12px; margin: 0 0 12px;">Si mantienes cartera + aportas US$600/mes (yield prom. ~2.5%):</p>
+      <div id="div-projection"></div>
+    </div>
+  </section>
+
+  <!-- ROTATION -->
+  <section id="tab-rotation" class="tab-content">
+    <div class="alert alert-warning">
+      <i class="ti ti-arrows-exchange"></i>
+      <div><div class="alert-title">Simulador de rotación</div><div class="alert-msg">No ejecuta operaciones reales — solo te muestra el impacto antes de decidir.</div></div>
+    </div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 4px;">Paso 1: Selecciona posiciones para vender</strong>
+      <p class="text-secondary" style="font-size: 12px; margin: 0 0 12px;">Marca las que rotarías. El capital liberado va al paso 2.</p>
+      <div id="rot-positions"></div>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-tertiary); font-size: 14px;">
+        Capital liberado: <strong id="rot-capital">$0</strong>
+      </div>
+    </div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 12px;">Paso 2: Estrategia de reasignación</strong>
+      <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
+        <button class="btn btn-sm preset-btn active" data-preset="balanced">⚖️ Balanceado</button>
+        <button class="btn btn-sm preset-btn" data-preset="dividend">💰 Dividendos</button>
+        <button class="btn btn-sm preset-btn" data-preset="growth">🚀 Crecimiento</button>
+        <button class="btn btn-sm preset-btn" data-preset="conservative">🛡️ Conservador</button>
+      </div>
+      <div id="preset-desc" style="font-size: 12px; margin-bottom: 12px; padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-md);" class="text-secondary"></div>
+      <div id="rot-allocation"></div>
+    </div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 12px;">Paso 3: Comparación antes / después</strong>
+      <div id="rot-comparison"></div>
+    </div>
+  </section>
+
+  <!-- BENCHMARK -->
+  <section id="tab-benchmark" class="tab-content">
+    <div class="alert alert-info">
+      <i class="ti ti-info-circle"></i>
+      <div><div class="alert-title">Benchmark vs IPSA y S&P 500</div><div class="alert-msg">Datos históricos reales. Compara tu rentabilidad contra los índices de referencia.</div></div>
+    </div>
+    <div class="grid grid-auto" style="margin-bottom: 1.5rem;">
+      <div class="metric-card"><p class="metric-label">Tu cartera CL</p><p id="bench-cl-pct" class="metric-value">—</p><p class="metric-sub">Rentabilidad real</p></div>
+      <div class="metric-card"><p class="metric-label">IPSA (1Y)</p><p class="metric-value">+18.5%</p><p class="metric-sub">Últimos 12 meses</p></div>
+      <div class="metric-card"><p class="metric-label">Tu cartera US</p><p id="bench-us-pct" class="metric-value">—</p><p class="metric-sub">Rentabilidad real</p></div>
+      <div class="metric-card"><p class="metric-label">S&P 500 (1Y)</p><p class="metric-value">+13.2%</p><p class="metric-sub">Últimos 12 meses</p></div>
+    </div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 12px;">Retornos anualizados por período</strong>
+      <table><thead><tr><th>Período</th><th style="text-align: right;">IPSA</th><th style="text-align: right;">S&P 500</th><th style="text-align: right;">Nasdaq 100</th></tr></thead><tbody id="bench-tbody"></tbody></table>
+    </div>
+    <div class="card">
+      <strong style="font-size: 14px; display: block; margin-bottom: 12px;">¿Y si hubieras invertido en IPSA?</strong>
+      <div id="bench-cl-sim"></div>
+    </div>
+    <div class="card">
+      <div style="position: relative; width: 100%; height: 280px;"><canvas id="bench-chart" role="img" aria-label="Comparativa cartera vs benchmarks"></canvas></div>
+    </div>
+  </section>
+
+  <!-- PROJECTION -->
+  <section id="tab-projection" class="tab-content">
+    <div class="card" style="background: var(--bg-secondary);">
+      <p class="metric-label" style="margin-bottom: 8px;">Simulador a 20 años</p>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><label style="font-size: 13px; min-width: 110px;">Aporte mensual</label><input type="range" min="100" max="2000" value="600" step="50" id="proj-monthly" style="flex: 1;" /><span style="font-size: 14px; font-weight: 500; min-width: 60px; text-align: right;" id="proj-monthly-out">$600</span></div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><label style="font-size: 13px; min-width: 110px;">Capital inicial</label><input type="range" min="0" max="20000" value="0" step="500" id="proj-initial" style="flex: 1;" /><span style="font-size: 14px; font-weight: 500; min-width: 60px; text-align: right;" id="proj-initial-out">$0</span></div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><label style="font-size: 13px; min-width: 110px;">Retorno anual %</label><input type="range" min="4" max="12" value="8" step="0.5" id="proj-return" style="flex: 1;" /><span style="font-size: 14px; font-weight: 500; min-width: 60px; text-align: right;" id="proj-return-out">8%</span></div>
+      <div style="display: flex; align-items: center; gap: 12px;"><label style="font-size: 13px; min-width: 110px;">Años</label><input type="range" min="5" max="30" value="20" step="1" id="proj-years" style="flex: 1;" /><span style="font-size: 14px; font-weight: 500; min-width: 60px; text-align: right;" id="proj-years-out">20</span></div>
+    </div>
+    <div id="proj-summary" class="grid grid-auto" style="margin-bottom: 1rem;"></div>
+    <div class="card"><div style="position: relative; width: 100%; height: 280px;"><canvas id="proj-chart" role="img" aria-label="Proyección de crecimiento"></canvas></div></div>
+  </section>
+
+  <!-- ALERTS -->
+  <section id="tab-alerts" class="tab-content">
+    <div id="alerts-list"></div>
+  </section>
+</div>
+
+<div class="install-banner" id="install-banner">
+  <i class="ti ti-device-mobile" style="font-size: 20px;"></i>
+  <p>Instala esta app en tu pantalla de inicio para acceso rápido</p>
+  <button class="btn btn-sm" id="install-btn">Instalar</button>
+  <button class="btn btn-sm btn-icon" id="install-dismiss"><i class="ti ti-x"></i></button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
